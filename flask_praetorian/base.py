@@ -899,20 +899,18 @@ class Praetorian:
         )
 
     def send_token_email(
-        self, email, user=None, template=None,
-        action_sender=None, action_uri=None,
-        subject=None, override_access_lifespan=None,
-        custom_token=None,
+        self, email, user,
+        template=None, action_sender=None, action_uri=None,
+        subject=None, override_access_lifespan=None, custom_token=None,
     ):
         """
-        Sends an email to a user, containing a time expiring
-            token usable for several actions.  This requires
-            your application is initialized with a `mail` extension,
-            which supports Flask-Mail's `Message()` object and
-            a `send()` method.
+        Sends an email to a user, containing a time expiring token usable for several
+        actions.  This requires your application is initialized with a `mail` extension,
+        which supports Flask-Mail's `Message()` object and a `send()` method.
 
         Returns a dict containing the information sent, along with the
-            `result` from mail send.
+        `result` from mail send.
+
         :param: email:                    The email address to use
                                           (username, id, email, etc)
         :param: user:                     The user object to tie claim to
@@ -931,6 +929,10 @@ class Praetorian:
         :param: custom_token:             The token to be carried as the
                                           email's payload
         """
+        InvalidUserError.require_condition(
+            user,
+            "A valid user is required to send email",
+        )
         notification = {
                 'result': None,
                 'message': None,

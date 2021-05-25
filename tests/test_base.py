@@ -864,6 +864,12 @@ class TestPraetorian:
             assert token_data['duder'] == 'brief'
             assert token_data['el_duderino'] == 'not brief'
 
+    def test_send_token_email__raises_exception_for_invalid_user(
+            self, app, user_class, default_guard,
+    ):
+        with pytest.raises(InvalidUserError, match="A valid user is required"):
+            default_guard.send_token_email('valid@email.com', None)
+
     def test_reset_email(self, app, user_class, db, tmpdir, default_guard):
         """
         This test verifies email based password reset functions as expected.
