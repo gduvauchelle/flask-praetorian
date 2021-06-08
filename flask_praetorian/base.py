@@ -776,11 +776,10 @@ class Praetorian:
         validation.  This requires your application is initialized with a `mail`
         extension, which supports Flask-Mail's `Message()` object and a `send()` method.
 
-        Returns a dict containing the information sent, along with the
-        `result` from mail send.
+        Returns a dict containing the information sent
 
-        :param: user:                     The user object to tie claim to
-                                          (username, id, email, etc)
+        :param: email: The email address to attempt to send to
+        :param: user:  The user object for which the reset email should be sent
         """
         custom_token = self.encode_jwt_token(
             user,
@@ -807,8 +806,7 @@ class Praetorian:
         validation.  This requires your application is initialized with a `mail`
         extension, which supports Flask-Mail's `Message()` object and a `send()` method.
 
-        Returns a dict containing the information sent, along with the
-        `result` from mail send.
+        Returns a dict containing the information sent
 
         :param: email: The email address to attempt to send to
         :param: user:  The user object for which the reset email should be sent
@@ -840,8 +838,7 @@ class Praetorian:
         with a `mail` extension, which supports Flask-Mail's `Message()` object and a
         `send()` method.
 
-        Returns a dict containing the information sent, along with the
-        `result` from mail send.
+        Returns a dict containing the information sent
 
         :param: email:         The email address to which the message should be sent
         :param: template:      HTML Template for confirmation email.
@@ -896,9 +893,7 @@ class Praetorian:
             )
 
             flask.current_app.logger.debug("Sending email to {}".format(email))
-            notification['result'] = flask.current_app.extensions['mail'].send(
-                msg
-            )
+            flask.current_app.extensions['mail'].send(msg)
 
         return notification
 

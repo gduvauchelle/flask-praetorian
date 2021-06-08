@@ -888,7 +888,7 @@ class TestPraetorian:
                 action_sender='TheStranger@mystery.com',
                 action_uri="action.mystery.com",
                 subject="Have it your way, Dude",
-                cutom_token="sasparilla",
+                custom_token="sasparilla",
             )
 
             token = notify['token']
@@ -896,18 +896,17 @@ class TestPraetorian:
             # test our own interpretation and what we got back from flask_mail
             assert token in notify['message']
             assert notify['message'] == outbox[0].html
-            assert notify['result']
 
     def test_send_token_email__raises_exception_if_action_sender_is_not_defined(
             self, app, user_class, default_guard,
     ):
-        with pytest.raises(InvalidUserError, match="A valid user is required"):
+        with pytest.raises(PraetorianError, match="A sender is required"):
             default_guard.send_token_email(
                 email='the.dude@abides.com',
                 template='whatever',
                 action_uri="action.mystery.com",
                 subject="Have it your way, Dude",
-                cutom_token="sasparilla",
+                custom_token="sasparilla",
                 # Explictly undefined
                 action_sender=None,
             )
@@ -929,10 +928,9 @@ class TestPraetorian:
         template_file = tmpdir.join('test_template.html')
         template_file.write(template)
 
-        app.config['TESTING'] = True
-        app.config['PRAETORIAN_EMAIL_TEMPLATE'] = str(template_file)
-        app.config['PRAETORIAN_RESET_ENDPOINT'] = 'unprotected'
-        app.config['PRAETORIAN_RESET_SENDER'] = 'mailer.daemon@stranger.com'
+        default_guard.reset_template = str(template_file)
+        default_guard.reset_uri = 'unprotected'
+        default_guard.reset_sender = 'mailer.daemon@stranger.com'
 
         # create our default test user
         the_dude = user_class(username='TheDude')
@@ -946,8 +944,6 @@ class TestPraetorian:
             # test our own interpretation and what we got back from flask_mail
             assert token in notify['message']
             assert notify['message'] == outbox[0].html
-
-            assert not notify['result']
 
         # test our token is good
         jwt_data = default_guard.extract_jwt_token(
@@ -977,10 +973,9 @@ class TestPraetorian:
         template_file = tmpdir.join('test_template.html')
         template_file.write(template)
 
-        app.config['TESTING'] = True
-        app.config['PRAETORIAN_EMAIL_TEMPLATE'] = str(template_file)
-        app.config['PRAETORIAN_CONFIRMATION_ENDPOINT'] = 'unprotected'
-        app.config['PRAETORIAN_CONFIRMATION_SENDER'] = 'mailer.daemon@stranger.com'
+        default_guard.confirmation_template = str(template_file)
+        default_guard.confirmation_uri = 'unprotected'
+        default_guard.confirmation_sender = 'mailer.daemon@stranger.com'
 
         # create our default test user
         the_dude = user_class(username='TheDude')
@@ -994,8 +989,6 @@ class TestPraetorian:
             # test our own interpretation and what we got back from flask_mail
             assert token in notify['message']
             assert notify['message'] == outbox[0].html
-
-            assert not notify['result']
 
         # test our token is good
         jwt_data = default_guard.extract_jwt_token(
