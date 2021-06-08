@@ -864,11 +864,53 @@ class TestPraetorian:
             assert token_data['duder'] == 'brief'
             assert token_data['el_duderino'] == 'not brief'
 
-    def test_send_token_email__raises_exception_for_invalid_user(
+    def test_send_token_email__renders_an_email_template_and_sends_the_message_with_the_token(
+        self, app, db, user_class, default_guard,
+    ):
+        # create our default test user
+        the_dude = user_class(username='TheDude')
+        db.session.add(the_dude)
+        db.session.commit()
+
+        template = """
+            <!doctype html>
+            <html>
+              <head><title>The Real Deal</title></head>
+              <body>
+                  <a href="{{ action_uri }}?token={{ token }}">Click Here to Register!</a>
+              </body>
+            </html>
+        """
+        with app.mail.record_messages() as outbox:
+            notify = default_guard.send_token_email(
+                email='the.dude@abides.com',
+                template=template,
+                action_sender='TheStranger@mystery.com',
+                action_uri="action.mystery.com",
+                subject="Have it your way, Dude",
+                cutom_token="sasparilla",
+            )
+
+            token = notify['token']
+
+            # test our own interpretation and what we got back from flask_mail
+            assert token in notify['message']
+            assert notify['message'] == outbox[0].html
+            assert notify['result']
+
+    def test_send_token_email__raises_exception_if_action_sender_is_not_defined(
             self, app, user_class, default_guard,
     ):
         with pytest.raises(InvalidUserError, match="A valid user is required"):
-            default_guard.send_token_email('valid@email.com', None)
+            default_guard.send_token_email(
+                email='the.dude@abides.com',
+                template='whatever',
+                action_uri="action.mystery.com",
+                subject="Have it your way, Dude",
+                cutom_token="sasparilla",
+                # Explictly undefined
+                action_sender=None,
+            )
 
     def test_reset_email(self, app, user_class, db, tmpdir, default_guard):
         """
@@ -890,6 +932,7 @@ class TestPraetorian:
         app.config['TESTING'] = True
         app.config['PRAETORIAN_EMAIL_TEMPLATE'] = str(template_file)
         app.config['PRAETORIAN_RESET_ENDPOINT'] = 'unprotected'
+        app.config['PRAETORIAN_RESET_SENDER'] = 'mailer.daemon@stranger.com'
 
         # create our default test user
         the_dude = user_class(username='TheDude')
@@ -897,18 +940,7 @@ class TestPraetorian:
         db.session.commit()
 
         with app.mail.record_messages() as outbox:
-            # test a bad username
-            with pytest.raises(MissingUserError):
-                notify = default_guard.send_reset_email(
-                    email='fail@whale.org',
-                    reset_sender='you@whatever.com',
-                )
-
-            # test a good username
-            notify = default_guard.send_reset_email(
-                email=the_dude.username,
-                reset_sender='you@whatever.com',
-            )
+            notify = default_guard.send_reset_email("the.dude@abides.com", the_dude)
             token = notify['token']
 
             # test our own interpretation and what we got back from flask_mail
@@ -948,6 +980,7 @@ class TestPraetorian:
         app.config['TESTING'] = True
         app.config['PRAETORIAN_EMAIL_TEMPLATE'] = str(template_file)
         app.config['PRAETORIAN_CONFIRMATION_ENDPOINT'] = 'unprotected'
+        app.config['PRAETORIAN_CONFIRMATION_SENDER'] = 'mailer.daemon@stranger.com'
 
         # create our default test user
         the_dude = user_class(username='TheDude')
@@ -955,10 +988,7 @@ class TestPraetorian:
         db.session.commit()
 
         with app.mail.record_messages() as outbox:
-            notify = default_guard.send_registration_email(
-                'the@dude.com', user=the_dude,
-                confirmation_sender='you@whatever.com',
-            )
+            notify = default_guard.send_registration_email('the.dude@abides.com', the_dude)
             token = notify['token']
 
             # test our own interpretation and what we got back from flask_mail
